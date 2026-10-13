@@ -1,0 +1,31 @@
+# Ключи и пароли
+.env
+
+# Окружение Python и служебное
+.venv/
+__pycache__/
+*.pyc
+agent.log
+
+# Реальные данные компании (заявки, задачи, письма, жильцы) — только локально
+*.xlsx
+*.xls
+*.csv
+data/inbox/
+data/archive/
+data/staging/
+data/queue/
+data/state.json
+data/costs.csv
+reports/
+
+# Демо- и мок-данные выдуманные — их можно публиковать
+!data/demo/
+!data/demo/*.xlsx
+
+# Локальные заметки, настройки и отдельные навыки (не часть агента)
+начальный_промпт.txt
+результат_first_prompt.txt
+результат_первого_промпта.txt
+.claude/
+registracya/

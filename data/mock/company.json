@@ -1,0 +1,61 @@
+{
+  "company": "УК «Пример»",
+  "as_of": "2026-10-11T09:00",
+  "departments": [
+    {"id": "ads", "name": "Аварийно-диспетчерская служба", "head": "Орлова М. С."},
+    {"id": "tech", "name": "Техническая служба", "head": "Громов В. П."},
+    {"id": "abon", "name": "Абонентский отдел", "head": "Титова Н. В."}
+  ],
+  "employees": [
+    {"name": "Орлова М. С.", "position": "старший диспетчер", "department": "ads"},
+    {"name": "Белов К. Р.", "position": "аварийный слесарь", "department": "ads"},
+    {"name": "Громов В. П.", "position": "главный инженер", "department": "tech"},
+    {"name": "Соколов Д. А.", "position": "сантехник", "department": "tech"},
+    {"name": "Ершов И. Н.", "position": "электрик", "department": "tech"},
+    {"name": "Фомина Л. Г.", "position": "мастер по кровле и ремонту", "department": "tech"},
+    {"name": "Титова Н. В.", "position": "начальник абонентского отдела", "department": "abon"},
+    {"name": "Ковалёв С. И.", "position": "бухгалтер по начислениям", "department": "abon"}
+  ],
+  "houses": [
+    {"id": "gor7", "address": "Горьковская 7"},
+    {"id": "pav3", "address": "Павловского 3"},
+    {"id": "kur17a", "address": "Курако 17а"},
+    {"id": "tor24", "address": "Тореза 24"},
+    {"id": "kl9", "address": "Клименко 9"}
+  ],
+  "tasks": [
+    {"id": "T-101", "title": "Протечка кровли над кв. 45", "category": "кровля", "department": "tech", "assignee": "Фомина Л. Г.", "house": "gor7", "status": "in_progress", "priority": "normal", "created": "2026-10-01T10:20", "deadline": "2026-10-04T18:00", "closed": null, "source": "CRM", "note": "ждём сухую погоду"},
+    {"id": "T-102", "title": "Протечка кровли, мокрый потолок кв. 48", "category": "кровля", "department": "tech", "assignee": "Фомина Л. Г.", "house": "gor7", "status": "in_progress", "priority": "normal", "created": "2026-10-05T14:05", "deadline": "2026-10-08T18:00", "closed": null, "source": "CRM"},
+    {"id": "T-103", "title": "Протечка кровли в подъезде 3", "category": "кровля", "department": "tech", "assignee": "Фомина Л. Г.", "house": "gor7", "status": "new", "priority": "normal", "created": "2026-10-09T11:30", "deadline": "2026-10-12T18:00", "closed": null, "source": "CRM"},
+    {"id": "T-104", "title": "Ремонт кровли силами подрядчика, смета 480 000 ₽", "category": "кровля", "department": "tech", "assignee": "Громов В. П.", "house": "gor7", "status": "in_progress", "priority": "normal", "created": "2026-10-06T09:00", "deadline": "2026-10-13T18:00", "closed": null, "source": "CRM", "decision": "согласовать смету подрядчика на ремонт кровли на Горьковской 7, 480 тысяч рублей"},
+    {"id": "T-105", "title": "Течь стояка холодной воды в подвале", "category": "сантехника", "department": "tech", "assignee": "Соколов Д. А.", "house": "pav3", "status": "in_progress", "priority": "high", "created": "2026-10-07T08:40", "deadline": "2026-10-08T18:00", "closed": null, "source": "CRM", "note": "нет нужной трубы на складе"},
+    {"id": "T-106", "title": "Засор канализации, кв. 12", "category": "сантехника", "department": "tech", "assignee": "Соколов Д. А.", "house": "pav3", "status": "in_progress", "priority": "normal", "created": "2026-10-08T16:10", "deadline": "2026-10-10T18:00", "closed": null, "source": "CRM"},
+    {"id": "T-107", "title": "Нет горячей воды, кв. 90", "category": "сантехника", "department": "tech", "assignee": "Соколов Д. А.", "house": "tor24", "status": "in_progress", "priority": "normal", "created": "2026-10-10T09:15", "deadline": "2026-10-11T18:00", "closed": null, "source": "CRM"},
+    {"id": "T-108", "title": "Замена вентиля на стояке горячей воды", "category": "сантехника", "department": "tech", "assignee": "Соколов Д. А.", "house": "kl9", "status": "new", "priority": "normal", "created": "2026-10-10T13:00", "deadline": "2026-10-13T18:00", "closed": null, "source": "CRM"},
+    {"id": "T-109", "title": "Подтекает радиатор в подъезде 1", "category": "отопление", "department": "tech", "assignee": "Соколов Д. А.", "house": "kur17a", "status": "new", "priority": "normal", "created": "2026-10-11T07:40", "deadline": "2026-10-14T18:00", "closed": null, "source": "CRM"},
+    {"id": "T-110", "title": "Нет света на 5 этаже", "category": "электрика", "department": "tech", "assignee": "Ершов И. Н.", "house": "tor24", "status": "done", "priority": "normal", "created": "2026-10-09T10:00", "deadline": "2026-10-10T18:00", "closed": "2026-10-09T15:30", "source": "CRM"},
+    {"id": "T-111", "title": "Не работает домофон, подъезд 1", "category": "электрика", "department": "tech", "assignee": "Ершов И. Н.", "house": "kl9", "status": "done", "priority": "normal", "created": "2026-10-08T12:00", "deadline": "2026-10-11T18:00", "closed": "2026-10-10T17:20", "source": "CRM"},
+    {"id": "T-112", "title": "Искрит электрощиток на 3 этаже", "category": "электрика", "department": "tech", "assignee": "Ершов И. Н.", "house": "kur17a", "status": "in_progress", "priority": "high", "created": "2026-10-10T19:30", "deadline": "2026-10-11T12:00", "closed": null, "source": "CRM", "note": "щиток обесточен, нужен автомат"},
+    {"id": "T-113", "title": "Покраска перил, подъезд 2", "category": "благоустройство", "department": "tech", "assignee": "Фомина Л. Г.", "house": "kl9", "status": "postponed", "priority": "normal", "created": "2026-09-20T10:00", "deadline": "2026-10-01T18:00", "closed": null, "source": "CRM", "note": "отложено до весны"},
+    {"id": "T-114", "title": "Плановый осмотр подвала", "category": "осмотр", "department": "tech", "assignee": "Громов В. П.", "house": "kur17a", "status": "done", "priority": "normal", "created": "2026-10-06T09:00", "deadline": "2026-10-09T18:00", "closed": "2026-10-08T11:00", "source": "CRM"},
+    {"id": "A-201", "title": "Нет отопления в подъезде 2", "category": "отопление", "department": "ads", "assignee": "Белов К. Р.", "house": "kur17a", "status": "new", "priority": "high", "created": "2026-10-10T22:15", "deadline": "2026-10-11T10:00", "closed": null, "source": "CRM", "note": "принята ночью, бригада ещё не выезжала"},
+    {"id": "A-202", "title": "Затопление кв. 33 сверху", "category": "сантехника", "department": "ads", "assignee": "Белов К. Р.", "house": "pav3", "status": "done", "priority": "high", "created": "2026-10-09T23:10", "deadline": "2026-10-10T03:00", "closed": "2026-10-10T01:05", "source": "CRM"},
+    {"id": "A-203", "title": "Застрял лифт, подъезд 4", "category": "лифт", "department": "ads", "assignee": "Орлова М. С.", "house": "tor24", "status": "done", "priority": "high", "created": "2026-10-10T18:40", "deadline": "2026-10-10T19:40", "closed": "2026-10-10T19:25", "source": "CRM"},
+    {"id": "A-204", "title": "Запах газа в подъезде, передано в Горгаз", "category": "газ", "department": "ads", "assignee": "Орлова М. С.", "house": "kl9", "status": "done", "priority": "high", "created": "2026-10-08T07:50", "deadline": "2026-10-08T09:00", "closed": "2026-10-08T08:30", "source": "CRM"},
+    {"id": "B-301", "title": "Жалоба жителя в жилинспекцию на начисления за отопление", "category": "начисления", "department": "abon", "assignee": "Титова Н. В.", "house": "tor24", "status": "in_progress", "priority": "high", "created": "2026-10-02T11:00", "deadline": "2026-10-12T18:00", "closed": null, "source": "CRM", "decision": "подписать ответ в жилинспекцию по жалобе с Тореза 24, срок завтра"},
+    {"id": "B-302", "title": "Перерасчёт за отсутствие горячей воды", "category": "начисления", "department": "abon", "assignee": "Ковалёв С. И.", "house": "pav3", "status": "in_progress", "priority": "normal", "created": "2026-10-03T10:00", "deadline": "2026-10-10T18:00", "closed": null, "source": "1С"},
+    {"id": "B-303", "title": "Сверка показаний общедомовых счётчиков за сентябрь", "category": "начисления", "department": "abon", "assignee": "Ковалёв С. И.", "house": null, "status": "done", "priority": "normal", "created": "2026-10-01T09:00", "deadline": "2026-10-07T18:00", "closed": "2026-10-06T16:00", "source": "1С"},
+    {"id": "B-304", "title": "Работа с должниками: уведомления и претензии", "category": "долги", "department": "abon", "assignee": "Титова Н. В.", "house": "tor24", "status": "new", "priority": "normal", "created": "2026-10-07T10:00", "deadline": "2026-10-15T18:00", "closed": null, "source": "1С", "decision": "решить, подавать ли в суд на шесть крупнейших должников по Тореза 24"}
+  ],
+  "finance": {
+    "period": "сентябрь 2026",
+    "source": "1С",
+    "houses": [
+      {"house": "gor7", "charged": 1240000, "paid": 1150000},
+      {"house": "pav3", "charged": 980000, "paid": 905000},
+      {"house": "kur17a", "charged": 1560000, "paid": 1380000},
+      {"house": "tor24", "charged": 1120000, "paid": 795000},
+      {"house": "kl9", "charged": 860000, "paid": 812000}
+    ]
+  }
+}

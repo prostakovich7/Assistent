@@ -468,7 +468,7 @@ def summarize(tables: list[Table], now: datetime, since: datetime | None = None,
 
 # ---------- Поиск по полной таблице (для вопросов в боте) ----------
 
-def search(tables: list[Table], query: str, limit: int = 40) -> str:
+def search(tables: list[Table], query: str, limit: int = 20) -> str:
     """Ищет строки, где встречаются все слова запроса (номер, адрес, фамилия, текст)."""
     words = [w.lower() for w in re.findall(r"\w+", query)]
     if not words:

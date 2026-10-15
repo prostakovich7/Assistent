@@ -13,7 +13,7 @@ from telegram.constants import ChatAction
 from telegram.ext import (Application, CommandHandler, ContextTypes, MessageHandler,
                           filters)
 
-from . import analyze, commands, config, report, sources, stt, voice
+from . import analyze, commands, config, db, report, sources, stt, voice
 
 log = logging.getLogger("assistent")
 CHECK_EVERY = 5 * 60  # секунд между проверками «не пора ли отправить отчёт»
@@ -155,12 +155,15 @@ async def report_now(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 HISTORY_TURNS = 6  # сколько последних вопросов-ответов помнить для уточнений
 
 
-def history(context: ContextTypes.DEFAULT_TYPE, r: report.Report) -> list[tuple[str, str]]:
-    """История разговора по текущему отчёту; с новым отчётом начинается заново."""
-    data = context.chat_data
-    if data.get("report_day") != r.day:
-        data["report_day"], data["history"] = r.day, []
-    return data["history"]
+def history(chat_id: int, r: report.Report) -> list[tuple[str, str]]:
+    """История разговора по текущему отчёту (из базы); с новым отчётом начинается заново."""
+    return db.get_dialog(chat_id, r.day.isoformat(), HISTORY_TURNS)
+
+
+async def show_db(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """/база — что хранится в базе (переживает перезапуск бота)."""
+    if is_owner(update):
+        await update.message.reply_text(db.summary(update.effective_chat.id))
 
 
 async def reply_voice(update: Update, text: str, caption: str = "") -> None:
@@ -182,7 +185,7 @@ async def answer_question(update: Update, context: ContextTypes.DEFAULT_TYPE,
     if REPORT_REQUEST_RE.search(text):
         await report_on_request(update, context, spoken, text)
         return
-    pending = context.chat_data.get("pending_tasks")
+    pending = db.get_pending(update.effective_chat.id)
     if pending or commands.COMMAND_RE.search(text):
         if await handle_command(update, context, text, spoken, pending):
             return
@@ -191,14 +194,14 @@ async def answer_question(update: Update, context: ContextTypes.DEFAULT_TYPE,
         msg = "Отчётов пока нет. Пришлите /report, чтобы собрать первый."
         await (reply_voice(update, msg) if spoken else update.message.reply_text(msg))
         return
-    turns = history(context, r)
+    chat_id = update.effective_chat.id
+    turns = history(chat_id, r)
     await update.effective_chat.send_action(
         ChatAction.RECORD_VOICE if spoken else ChatAction.TYPING)
     try:
         reply = await asyncio.to_thread(analyze.answer, text, r.full, r.data, r.tables(),
-                                        list(turns), spoken)
-        turns.append((text, reply))
-        del turns[:-HISTORY_TURNS]
+                                        turns, spoken)
+        db.add_dialog(chat_id, r.day.isoformat(), text, reply)
     except Exception:
         log.exception("Ошибка при ответе на вопрос")
         reply = "Не получилось ответить, попробуйте ещё раз чуть позже."
@@ -225,7 +228,7 @@ async def handle_command(update: Update, context: ContextTypes.DEFAULT_TYPE, tex
     log.info("Поручение: %s → %s", text, result)
     intent = result["intent"]
     if intent == "tasks" and result["tasks"]:
-        context.chat_data["pending_tasks"] = result["tasks"]
+        db.set_pending(update.effective_chat.id, result["tasks"])
         msg = commands.confirmation(result["tasks"])
         if result["question"]:
             msg = msg.replace(" Подтверждаете?", f" {result['question']}")
@@ -234,12 +237,12 @@ async def handle_command(update: Update, context: ContextTypes.DEFAULT_TYPE, tex
         await say(result["question"] or "Не понял, кому и что поручить. Повторите, пожалуйста.")
     elif intent == "confirm" and pending:
         commands.enqueue(pending, text)
-        context.chat_data.pop("pending_tasks", None)
+        db.clear_pending(update.effective_chat.id)
         n = len(pending)
         await say(("Принято, задача поставлена" if n == 1 else f"Принято, {n} задачи поставлены")
                   + " в очередь на создание в Бурмистре.")
     elif intent == "cancel" and pending:
-        context.chat_data.pop("pending_tasks", None)
+        db.clear_pending(update.effective_chat.id)
         await say("Хорошо, отменил.")
     else:
         return False  # вопрос или что-то другое — отвечаем как обычно
@@ -331,6 +334,7 @@ def main() -> None:
     if not config.TELEGRAM_BOT_TOKEN:
         raise SystemExit("Не задан TELEGRAM_BOT_TOKEN в файле .env")
     _lock = single_instance()  # noqa: F841 — держим порт до выхода
+    db.migrate_files()  # один раз переносит старые state.json, очередь и costs.csv в базу
 
     # Связь с Телеграмом бывает медленной — увеличенные таймауты вместо 5 секунд по умолчанию.
     app = (Application.builder().token(config.TELEGRAM_BOT_TOKEN)
@@ -338,6 +342,8 @@ def main() -> None:
            .build())
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("report", report_now))
+    app.add_handler(CommandHandler("db", show_db))  # команды в Telegram — только латиницей
+    app.add_handler(MessageHandler(filters.Regex(r"(?i)^\s*/?база\s*$"), show_db))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, question))
     app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, voice_question))
     app.add_error_handler(on_error)

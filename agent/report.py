@@ -7,7 +7,7 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from . import analyze, config, mailer, sources, voice
+from . import analyze, config, db, mailer, sources, voice
 
 
 @dataclass
@@ -61,7 +61,7 @@ def period_start(exported: datetime, days: int | None = None) -> datetime:
     а если его не было (или он старше месяца) — неделя назад."""
     if days:
         return exported - timedelta(days=days)
-    last = _state().get("last_period_end")
+    last = db.get_state("last_period_end")
     if last:
         start = datetime.fromisoformat(last)
         if exported - timedelta(days=31) < start < exported:
@@ -102,9 +102,8 @@ async def build(allow_previous: bool = False, days: int | None = None) -> Report
     (folder / "meta.json").write_text(json.dumps({"exported": exported.isoformat(),
                                                   "since": since.isoformat()}),
                                       encoding="utf-8")
-    state = _state()
-    state["last_period_end"] = exported.isoformat()  # следующий отчёт начнётся отсюда
-    _save(state)
+    db.set_state("last_period_end", exported.isoformat())  # следующий отчёт начнётся отсюда
+    db.log_report(day.isoformat(), exported.isoformat(), since.isoformat(), str(folder), voice_text)
     (folder / "data.md").write_text(data, encoding="utf-8")
     (folder / "report.md").write_text(full, encoding="utf-8")
     (folder / "voice.txt").write_text(voice_text, encoding="utf-8")
@@ -132,21 +131,7 @@ def send_email(report: Report) -> bool:
     return True
 
 
-# ---------- Что уже сделано сегодня (переживает перезапуск и выключение компьютера) ----------
-
-STATE = config.ROOT / "data" / "state.json"
-
-
-def _state() -> dict:
-    try:
-        return json.loads(STATE.read_text(encoding="utf-8"))
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {}
-
-
-def _save(state: dict) -> None:
-    STATE.write_text(json.dumps(state, ensure_ascii=False, indent=1), encoding="utf-8")
-
+# ---------- Что уже сделано сегодня (в базе — переживает перезапуск и выключение) ----------
 
 def _today() -> str:
     return local_now().date().isoformat()
@@ -155,25 +140,22 @@ def _today() -> str:
 def mark(key: str) -> None:
     """Отметить событие сегодняшним днём: delivered — отчёт отправлен, nodata_notified —
     предупредили, что выгрузок нет."""
-    state = _state()
-    state[key] = _today()
-    _save(state)
+    db.set_state(key, _today())
 
 
 def done_today(key: str) -> bool:
-    return _state().get(key) == _today()
+    return db.get_state(key) == _today()
 
 
 def attempts_today() -> int:
-    state = _state()
-    return state.get("attempts", 0) if state.get("attempts_day") == _today() else 0
+    if db.get_state("attempts_day") != _today():
+        return 0
+    return int(db.get_state("attempts", "0"))
 
 
 def add_attempt() -> None:
-    state = _state()
-    state["attempts"] = attempts_today() + 1
-    state["attempts_day"] = _today()
-    _save(state)
+    db.set_state("attempts", str(attempts_today() + 1))
+    db.set_state("attempts_day", _today())
 
 
 def latest() -> Report | None:

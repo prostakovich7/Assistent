@@ -6,7 +6,7 @@ from datetime import datetime
 import anthropic
 from anthropic import beta_tool
 
-from . import config, sources
+from . import config, db, sources
 
 client = anthropic.Anthropic()  # ключ берётся из ANTHROPIC_API_KEY
 
@@ -118,26 +118,27 @@ search_requests. \
 обычный текст, без markdown-таблиц."""
 
 
-# Цены Claude Opus 5.5, $ за 1 млн токенов: вход, выход, чтение кэша, запись кэша (1 час).
-PRICE = {"input": 4.0, "output": 20.0, "cache_read": 0.20, "cache_write": 8.0}
-COSTS = config.ROOT / "data" / "costs.csv"
+# Цены, $ за 1 млн токенов: вход, выход, чтение кэша. Запись в кэш = вход × 1.25 (на 5 минут)
+# или × 2 (на 1 час).
+PRICES = {
+    "claude-opus-5-5": {"input": 4.0, "output": 20.0, "cache_read": 0.20},
+    "claude-sonnet-5-5": {"input": 2.0, "output": 10.0, "cache_read": 0.20},
+    "claude-haiku-5-5": {"input": 0.10, "output": 0.50, "cache_read": 0.01},
+}
 
 
-def log_cost(kind: str, usages: list) -> float:
-    """Посчитать стоимость запроса(ов) к Claude и дописать в data/costs.csv."""
+def log_cost(kind: str, usages: list, model: str = config.MODEL, ttl: str = "1h") -> float:
+    """Посчитать стоимость запроса(ов) к Claude и записать в базу (таблица costs)."""
     tok = {"input": 0, "output": 0, "cache_read": 0, "cache_write": 0}
     for u in usages:
         tok["input"] += u.input_tokens or 0
         tok["output"] += u.output_tokens or 0
         tok["cache_read"] += getattr(u, "cache_read_input_tokens", 0) or 0
         tok["cache_write"] += getattr(u, "cache_creation_input_tokens", 0) or 0
-    usd = sum(tok[k] * PRICE[k] for k in tok) / 1_000_000
-    new = not COSTS.exists()
-    with COSTS.open("a", encoding="utf-8") as f:
-        if new:
-            f.write("время;вид;вход;выход;кэш_чтение;кэш_запись;usd\n")
-        f.write(f"{datetime.now():%Y-%m-%d %H:%M};{kind};{tok['input']};{tok['output']};"
-                f"{tok['cache_read']};{tok['cache_write']};{usd:.4f}\n")
+    p = PRICES.get(model, PRICES[config.MODEL])
+    price = {**p, "cache_write": p["input"] * (2.0 if ttl == "1h" else 1.25)}
+    usd = sum(tok[k] * price[k] for k in tok) / 1_000_000
+    db.add_cost(kind, tok, usd)
     logging.getLogger("assistent").info("Стоимость (%s): $%.3f, токены %s", kind, usd, tok)
     return usd
 
@@ -154,7 +155,7 @@ def make_report(data: str, now: datetime) -> tuple[str, str]:
     with client.beta.messages.stream(
         model=config.MODEL,
         max_tokens=64000,
-        output_config={"effort": "high"},
+        output_config={"effort": config.REPORT_EFFORT},
         system=REPORT_SYSTEM.format(company=config.COMPANY_NAME,
                                     voice_max=config.VOICE_MAX_CHARS),
         messages=[{
@@ -226,24 +227,30 @@ def answer(question: str, report: str, data: str, tables: list[sources.Table],
         question += "\n\n" + SPOKEN_ANSWER.format(limit=config.ANSWER_VOICE_MAX_CHARS)
     messages.append({"role": "user", "content": question})
 
+    model, ttl = config.QA_MODEL, config.QA_CACHE_TTL
+    # «report» — только полный отчёт: он уже содержит справочные списки, остальное Claude
+    # найдёт инструментом поиска. «full» — ещё и вся сводка данных (почти вдвое больше токенов).
+    context = f"# Отчёт\n\n{report}"
+    if config.QA_CONTEXT == "full":
+        context += f"\n\n# Сводка данных\n\n{data}"
     runner = client.beta.messages.tool_runner(
-        model=config.MODEL,
+        model=model,
         max_tokens=8000,
         max_iterations=6,
         output_config={"effort": "medium"},
         system=[
             {"type": "text", "text": QA_SYSTEM.format(company=config.COMPANY_NAME)},
-            # Отчёт и сводка одинаковы для всех вопросов за день — кэшируем, так дешевле.
-            {"type": "text", "text": f"# Отчёт\n\n{report}\n\n# Сводка данных\n\n{data}",
-             "cache_control": {"type": "ephemeral", "ttl": "1h"}},
+            # Отчёт одинаков для всех вопросов за день — кэшируем, так дешевле.
+            {"type": "text", "text": context, "cache_control": {"type": "ephemeral", "ttl": ttl}},
         ],
         tools=[search_requests],
         messages=messages,
-        **FALLBACK,
+        # У Haiku нет серверной запасной модели при отказе — параметр только для Opus/Sonnet.
+        **({} if "haiku" in model else FALLBACK),
     )
     final, usages = None, []
     for message in runner:  # каждый шаг (поиск по выгрузке и т. п.) — отдельный запрос
         usages.append(message.usage)
         final = message
-    log_cost("вопрос", usages)
+    log_cost("вопрос", usages, model, ttl)
     return _text(final).strip()

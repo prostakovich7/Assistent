@@ -41,3 +41,14 @@ VOICE_MAX_CHARS = int(env("VOICE_MAX_CHARS", "800") or 800)
 ANSWER_VOICE_MAX_CHARS = int(env("ANSWER_VOICE_MAX_CHARS", "400") or 400)
 # Модель распознавания речи: small — баланс скорости и качества (tiny/base быстрее, medium точнее).
 WHISPER_MODEL = env("WHISPER_MODEL", "small")
+
+# ---- Стоимость (подробности и замеры — в ИНСТРУКЦИЯ.md) ----
+# Модель для ответов на вопросы в боте: claude-opus-5-5 | claude-sonnet-5-5 | claude-haiku-5-5
+QA_MODEL = env("QA_MODEL", MODEL)
+# Что отдавать Claude при вопросе: report — только полный отчёт (остальное ищется в выгрузках),
+# full — отчёт + вся сводка данных (дороже).
+QA_CONTEXT = env("QA_CONTEXT", "report")
+# Сколько живёт кэш отчёта для вопросов: 1h (запись ×2 цены, держится час) или 5m (×1.25, 5 минут).
+QA_CACHE_TTL = env("QA_CACHE_TTL", "1h")
+# Глубина анализа при сборке отчёта: high (как сейчас) или medium (дешевле).
+REPORT_EFFORT = env("REPORT_EFFORT", "high")

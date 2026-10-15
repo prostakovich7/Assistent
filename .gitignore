@@ -31,3 +31,5 @@ reports/
 registracya/
 скриншоты/
 dist/
+data/*.db
+data/*.db-journal

@@ -1,19 +1,17 @@
-"""Поручения голосом: «Поручи Зуевой до пятницы ответить по входящему 899».
+"""Поручения голосом: «Поручи Ивановой до пятницы ответить по входящему 899».
 
 Бот разбирает команду (исполнитель, суть, срок, входящее письмо), зачитывает её
-для подтверждения и после «да» кладёт в очередь data/queue/ — оттуда задачи
+для подтверждения и после «да» кладёт в очередь (таблица tasks в базе) — оттуда задачи
 создаются в Бурмистре через Chrome (отдельный шаг).
 """
 import json
 import re
 from datetime import date, datetime, timedelta
-from pathlib import Path
 
 import pandas as pd
 
-from . import analyze, config, report, sources
+from . import analyze, config, db, report, sources
 
-QUEUE = config.ROOT / "data" / "queue"
 WEEKDAYS = ("понедельник", "вторник", "среда", "четверг", "пятница", "суббота", "воскресенье")
 WEEKDAYS_GEN = ("понедельника", "вторника", "среды", "четверга", "пятницы", "субботы",
                 "воскресенья")
@@ -186,15 +184,7 @@ def letter_id(number: str) -> str:
     return str(row.iloc[0]["Идентификатор входящего"]).split(".")[0] if len(row) else ""
 
 
-def enqueue(tasks: list[dict], source_text: str) -> list[Path]:
-    QUEUE.mkdir(parents=True, exist_ok=True)
-    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-    paths = []
-    for i, t in enumerate(tasks, 1):
-        path = QUEUE / f"{stamp}-{i}.json"
-        path.write_text(json.dumps({**t, "letter_id": letter_id(t["letter_number"]),
-                                    "status": "new", "created": datetime.now().isoformat(),
-                                    "source": source_text}, ensure_ascii=False, indent=1),
-                        encoding="utf-8")
-        paths.append(path)
-    return paths
+def enqueue(tasks: list[dict], source_text: str) -> list[int]:
+    """Подтверждённые поручения → база (таблица tasks). Возвращает их номера."""
+    return [db.add_task({**t, "letter_id": letter_id(t["letter_number"])}, source_text)
+            for t in tasks]

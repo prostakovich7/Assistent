@@ -207,7 +207,7 @@ SPOKEN_ANSWER = """Директор за рулём: вопрос задан г�
 def answer(question: str, report: str, data: str, tables: list[sources.Table],
            history: list[tuple[str, str]] = (), spoken: bool = False) -> str:
     """Ответ на вопрос директора. history — предыдущие пары (вопрос, ответ) за день,
-    чтобы понимать уточнения вроде «а по Зуевой?»."""
+    чтобы понимать уточнения вроде «а по Ивановой?»."""
     @beta_tool
     def search_requests(query: str) -> str:
         """Ищет заявки жителей, задачи директора и входящие письма в полных выгрузках
